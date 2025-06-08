@@ -42,7 +42,7 @@ for pred_len in 14; do
                 --enc_in 11 \
                 --dec_in 11 \
                 --c_out 11 \
-                --d_model 32 \
+                --d_model 64 \
                 --n_heads 4 \
                 --embed_type 0\
                 --gpu 0\

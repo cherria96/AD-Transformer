@@ -1,0 +1,10 @@
+numpy
+matplotlib
+pandas
+scikit-learn
+argparse
+random
+typing
+time
+math
+torch==2.4.1

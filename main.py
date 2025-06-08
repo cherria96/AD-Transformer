@@ -1,14 +1,11 @@
 import argparse
-import os
 import torch
 from exp.exp_main import Exp_Main
 import random
 import numpy as np
-import os
-import sys
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Autoformer & Transformer family for Time Series Forecasting')
+    parser = argparse.ArgumentParser(description='Time Series Forecasting Model')
 
     # random seed
     parser.add_argument('--random_seed', type=int, default=100, help='random seed')
@@ -17,8 +14,7 @@ if __name__ == '__main__':
     parser.add_argument('--is_training', type=int, required=True, default=1, help='status')
     parser.add_argument('--model_id', type=str, required=True, default='test', help='model id')
     parser.add_argument('--model', type=str, required=True, default='Transformer',
-                        help='model name, options: [Transformer, LSTM, DALSTM, RNN_LSTM, DNN, DNN_DLinear, \
-                            ADformer, Autoformer, PatchTST, nsTransformer ]')
+                        help='model name, options: [Transformer, LSTM, DALSTM, RNN_LSTM, PatchFormer ]')
 
     # data loader
     parser.add_argument('--data', type=str, required=True, default='sbk_ad', help='dataset type')
@@ -40,10 +36,7 @@ if __name__ == '__main__':
     parser.add_argument('--kernel_size', type=int, default=25, help='kernel size for moving average')
     parser.add_argument('--decoder_mode', type=str, default='default', help='decoder input mode, options: [default, past_subs, future_subs]')
     
-    # DLinear
-    parser.add_argument('--individual', action='store_true', default=False, help='DLinear: a linear layer for each variate(channel) individually')
-    
-    # PatchTST
+    # PatchFormer
     parser.add_argument('--fc_dropout', type=float, default=0.1, help='fully connected dropout')
     parser.add_argument('--head_dropout', type=float, default=0.0, help='head dropout')
     parser.add_argument('--patch_len', type=int, default=8, help='patch length')
@@ -52,7 +45,7 @@ if __name__ == '__main__':
     parser.add_argument('--affine', type=int, default=0, help='RevIN-affine; True 1 False 0')
     parser.add_argument('--subtract_last', type=int, default=0, help='0: subtract mean; 1: subtract last')
     
-    # Formers 
+    # Models 
     parser.add_argument('--embed_type', type=int, default=0, help='0: default 1: value embedding + temporal embedding + positional embedding 2: value embedding + temporal embedding 3: value embedding + positional embedding 4: value embedding')
     parser.add_argument('--enc_in', type=int, default=31, help='encoder input size') # DLinear with --individual, use this hyperparameter as the number of channels
     parser.add_argument('--dec_in', type=int, default=31, help='decoder input size')
@@ -76,25 +69,6 @@ if __name__ == '__main__':
     parser.add_argument('--revin', action='store_true', default=False, help='RevIN')
     parser.add_argument('--wodenorm', action='store_true', default=False, help='w/o denormalization in RevIN')
     
-    # Anomaly Transformer
-    parser.add_argument('--win_size', type=float, default=100)
-    parser.add_argument('--step', type=float, default=1)
-    
-    # CARD
-    parser.add_argument('--optimizer', type=str, default='adam')
-    parser.add_argument('--alpha', type=float, default=0.5)
-    parser.add_argument('--beta', type=float, default=0.5)
-    parser.add_argument('--dp_rank', type=int,default = 8)
-    parser.add_argument('--rescale', type=int,default = 1)
-    parser.add_argument('--merge_size',type=int,default = 2)
-    parser.add_argument('--momentum', type=float,default = 0.1)
-    parser.add_argument('--local_rank', type=int,default = 0)
-    parser.add_argument('--devices_number',type=int,default = 1)
-    parser.add_argument('--use_statistic',action='store_true', default=False)
-    parser.add_argument('--use_decomp',action='store_true', default=False)
-    parser.add_argument('--same_smoothing',action='store_true', default=False)
-    parser.add_argument('--warmup_epochs',type=int,default = 0)
-
     # optimization
     parser.add_argument('--num_workers', type=int, default=10, help='data loader num workers')
     parser.add_argument('--itr', type=int, default=1, help='experiments times')
