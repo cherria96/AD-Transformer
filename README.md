@@ -10,13 +10,18 @@ This is implementation code for methane yield forecasting model in the full-scal
 3. Training: run the scripts in the directory `./scripts/`
 
 ### Baseline models: RNN, LSTM, Vanilla Transformer
-e.g. if you want to train vanilla Transformer model
+e.g. if you want to train vanilla Transformer model with main dataset
 ```
-sh scripts/sbk_ad/Transformer.sh
+sh scripts/main/Transformer.sh
 ```
 ### Proposed model
 ```
-sh scripts/sbk_ad/ADFormer.sh
+sh scripts/main/ADFormer.sh
 ```
+
+### Acknowledgement
+We appreciate the following github repositories for their code base:
+https://github.com/yuqinie98/PatchTST
+https://github.com/zhouhaoyi/Informer2020
 
 

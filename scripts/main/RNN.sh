@@ -8,9 +8,9 @@ label_len=7
 model=RNN_LSTM
 
 root_path_name=./data/
-data_path_name=sbk_ad_selected.csv
-dataset_name=sbk_ad_selected
-model_id_name=RNN_HRT
+data_path_name=main.csv
+dataset_name=main
+model_id_name=RNN
 
 if [ ! -d "./logs/"$dataset_name ]; then
     mkdir ./logs/$dataset_name

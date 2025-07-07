@@ -8,8 +8,8 @@ label_len=7
 model=RNN_LSTM
 
 root_path_name=./data/
-data_path_name=bssg_ad.csv
-dataset_name=bssg_ad
+data_path_name=D2.csv
+dataset_name=D2
 model_id_name=RNN
 
 if [ ! -d "./logs/"$dataset_name ]; then
@@ -20,7 +20,6 @@ random_seed=100
 START=1
 END=3
 for pred_len in $(seq $START $END); do 
-
     for seq_len in 14 28 42 56; do
         python -u main.py \
         --random_seed $random_seed \
@@ -35,10 +34,10 @@ for pred_len in $(seq $START $END); do
         --seq_len $seq_len \
         --label_len $label_len \
         --pred_len $pred_len \
-        --enc_in 10 \
-        --dec_in 10 \
+        --enc_in 16 \
+        --dec_in 16 \
         --c_out 1 \
-        --d_model 64 \
+        --d_model 32 \
         --n_heads 4 \
         --embed_type 0\
         --gpu 0\

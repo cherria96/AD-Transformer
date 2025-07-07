@@ -10,9 +10,6 @@ from utils.timeseries import series_decomp
 
 
 class Model(nn.Module): 
-    """
-    Vanilla Transformer with O(L^2) complexity
-    """
     def __init__(self, configs):
         super(Model, self).__init__()
         self.seq_len = configs.seq_len

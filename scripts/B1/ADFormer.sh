@@ -8,20 +8,20 @@ label_len=7
 model=ADFormer
 
 root_path_name=./data/
-data_path_name=dgsh_ad.csv
-dataset_name=dgsh_ad
+data_path_name=B1.csv
+dataset_name=B1
 model_id_name=ADformer
 if [ ! -d "./logs/"$dataset_name ]; then
     mkdir ./logs/$dataset_name
 fi
 
 random_seed=100
-START=1
+START=4
 END=14
 for pred_len in $(seq $END); do 
     for seq_len in 14 28 42 56; do
-        for patchnum in 4 8 12 16; do
-            for stride in 1 2 3 4 5; do
+        for patchnum in 4 8; do
+            for stride in 1 2 3; do
                 patch_len=$(( seq_len - (patchnum - 1) * stride ))
                 # Ensure valid patch_len
                 if [ $patch_len -gt 0 ]; then
@@ -42,10 +42,10 @@ for pred_len in $(seq $END); do
                         --pred_len $pred_len \
                         --patch_len $patch_len \
                         --stride $stride \
-                        --enc_in 16 \
-                        --dec_in 16 \
-                        --c_out 16 \
-                        --d_model 64 \
+                        --enc_in 10 \
+                        --dec_in 10 \
+                        --c_out 10 \
+                        --d_model 32 \
                         --n_heads 4 \
                         --embed_type 0\
                         --gpu 0\

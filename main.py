@@ -25,8 +25,6 @@ if __name__ == '__main__':
     parser.add_argument('--train_size', type=float, default=0.6, help='train size portion')
     parser.add_argument('--random_sample', type=bool, default=False, help='True: random samplingm, False: chronological sampling')
     parser.add_argument('--data_size', type=float, default=1.0, help='portion of data used for training, 1.0 means using all data')
-    parser.add_argument('--cv_splits', type=int, default=None, help='how many total folds for cross-validation')
-    parser.add_argument('--cv_index', type=int, default=None, help='which fold to use for training, 0-based index')
 
     parser.add_argument('--target', type=str, default='BP', help='target feature in S or MS task')
     parser.add_argument('--freq', type=str, default='d',

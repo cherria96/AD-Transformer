@@ -8,9 +8,9 @@ label_len=7
 model=ADFormer
 
 root_path_name=./data/
-data_path_name=sbk_ad_selected.csv
-dataset_name=sbk_ad_selected
-model_id_name=ADformer_datasize
+data_path_name=main.csv
+dataset_name=main
+model_id_name=ADformer_simulated
 if [ ! -d "./logs/"$dataset_name ]; then
     mkdir ./logs/$dataset_name
 fi
@@ -18,11 +18,10 @@ fi
 random_seed=100
 START=1
 END=14
-echo "START Running ADFormer with hyperparameter tuning"
-for pred_len in $(seq $END); do 
-    for seq_len in 14 28; do
+for pred_len in 14; do 
+    for seq_len in 14; do
         for patch_len in 7; do
-            for stride in 1 2 7; do
+            for stride in 1; do
                 
                 # patch_num=$(( seq_len - (patchnum - 1) * stride ))
                 patchnum=$(( ($seq_len - $patch_len) / $stride + 1 ))
@@ -49,12 +48,13 @@ for pred_len in $(seq $END); do
                 --enc_in 11 \
                 --dec_in 11 \
                 --c_out 11 \
-                --d_model 64 \
+                --d_model 32 \
                 --n_heads 4 \
                 --embed_type 0\
                 --gpu 0\
                 --kernel_size 7 \
-                --decoder_mode default \
+                --n_subs 2 \
+                --decoder_mode future \
                 --embed fixed \
                 --series_decomposition \
                 --revin \
