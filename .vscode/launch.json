@@ -1,0 +1,42 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debugger: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": [
+                "--is_training", "1",
+                "--model_id","ADformer_test",
+                "--model","ADFormer",
+                "--data","sbk_ad",
+                "--root_path", "./data/",
+                "--data_path","sbk_ad_selected.csv",
+                "--embed_type", "4",
+                "--seq_len", "28",
+                "--pred_len", "1",
+                "--label_len", "7",  
+                "--patch_len", "25",  
+                "--stride", "1",  
+                "--train_epochs","2",
+                "--output_attention",
+                "--features", "MS",
+                "--enc_in", "11",
+                "--dec_in", "11",
+                "--c_out", "11",
+                "--decoder_mode", "default",
+                "--n_subs", "4",
+                "--revin",
+                "--output_attention",
+                "--d_model", "32",
+                "--n_heads", "4",
+            ]
+
+        }
+    ]
+}

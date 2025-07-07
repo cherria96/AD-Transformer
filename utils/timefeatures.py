@@ -87,8 +87,8 @@ def time_features_from_frequency_str(freq_str: str) -> List[TimeFeature]:
         offsets.QuarterEnd: [MonthOfYear],
         offsets.MonthEnd: [MonthOfYear],
         offsets.Week: [DayOfMonth, WeekOfYear],
-        # offsets.Day: [DayOfWeek, DayOfMonth, DayOfYear],
-        offsets.Day: [DayOfWeek, MonthOfYear, DayOfMonth, DayOfYear],
+        offsets.Day: [DayOfWeek, MonthOfYear],
+        # offsets.Day: [DayOfWeek, MonthOfYear, DayOfMonth, DayOfYear],
         offsets.BusinessDay: [DayOfWeek, DayOfMonth, DayOfYear],
         offsets.Hour: [HourOfDay, DayOfWeek, DayOfMonth, DayOfYear],
         offsets.Minute: [

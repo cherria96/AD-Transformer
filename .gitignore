@@ -1,0 +1,11 @@
+data/
+notebook/
+results/
+test_results/
+checkpoints/
+logs/
+# Ignore Python cache files
+__pycache__/
+# Ignore Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+results_*.txt

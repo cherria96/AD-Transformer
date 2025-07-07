@@ -1,7 +1,6 @@
 from data_provider.data_factory import data_provider
 from exp.exp_basic import Exp_Basic
-from models import Transformer, LSTM, DALSTM, RNN_LSTM, PatchFormer
-# from kan import KAN
+from models import Transformer, LSTM, RNN_LSTM, ADFormer
 from utils.tools import EarlyStopping, adjust_learning_rate, visualize_predictions, visual, test_params_flop
 from utils.metrics import metric
 
@@ -28,9 +27,8 @@ class Exp_Main(Exp_Basic):
         model_dict = {
             'Transformer': Transformer,
             'LSTM': LSTM,
-            'DALSTM': DALSTM,
             'RNN_LSTM': RNN_LSTM,
-            'Patchformer': PatchFormer,
+            'ADFormer': ADFormer,
         }
         model = model_dict[self.args.model].Model(self.args).float()
 
@@ -50,42 +48,12 @@ class Exp_Main(Exp_Basic):
         criterion = nn.MSELoss()
         return criterion
     
-    def cluster_loss(self, M, S):
-        """
-        Compute the cluster loss L_C.
-        
-        S: [C, C] - Channel similarity matrix
-        M: [C, K] - Cluster assignment matrix (C channels, K clusters)
-        
-        Returns:
-        L_C: Cluster loss
-        """
-        # Compute M^T S M
-        within_cluster_similarity = torch.trace(torch.mean(M.transpose(1,2) @ S @ M, dim = 0))
-        
-        # Compute (I - M M^T) S
-        I = torch.eye(M.shape[1], device=M.device)  # Identity matrix of size [C, C]
-        between_cluster_separation = torch.trace(torch.mean((I - M @ M.transpose(1,2)) @ S, dim = 0))
-        
-        # Cluster loss: L_C = -Tr(M^T S M) + Tr((I - M M^T) S)
-        L_C = -within_cluster_similarity + between_cluster_separation
-        
-        return L_C
     def _decoder_input(self, batch_x, batch_y):
         batch_x = batch_x.cpu()  # (B, S, D)
         batch_y = batch_y.cpu()  # (B, T, D)
         if self.args.decoder_mode == 'default':
             dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
             dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
-        
-        # elif self.args.decoder_mode == 'past_subs':
-        #     dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, self.args.n_subs:]).float()
-            
-        #     full_seq = torch.cat([batch_x[:, :, :self.args.n_subs], batch_y[:, :, :self.args.n_subs]], dim = 1).float()
-        #     dec_inp = torch.cat()
-            
-        #     dec_inp = torch.cat([batch_x[:, -self.args.pred_len:, :self.args.n_subs], dec_inp], dim=-1).float()
-        #     dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
         
         elif self.args.decoder_mode == 'future_subs':
             dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, self.args.n_subs:]).float()
@@ -112,25 +80,16 @@ class Exp_Main(Exp_Basic):
                 # encoder - decoder
                 if self.args.use_amp:
                     with torch.cuda.amp.autocast():
-                        if 'DNN' in self.args.model or 'TST' in self.args.model:
-                            outputs = self.model(batch_x)
-                        elif  'LSTM' in self.args.model:
+                        if  'LSTM' in self.args.model:
                             outputs = self.model(batch_x, batch_x_mark)
-                        elif 'CCM' in self.args.model:
-                            outputs, M, S = self.model(batch_x)
                         else:
                             if self.args.output_attention:
                                 outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
                             else:
                                 outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
                 else:
-                    if 'DNN' in self.args.model or 'TST' in self.args.model:
-                        outputs = self.model(batch_x)
-                    elif  'LSTM' in self.args.model:
+                    if  'LSTM' in self.args.model:
                         outputs = self.model(batch_x, batch_x_mark)
-
-                    elif 'CCM' in self.args.model:
-                        outputs, M, S = self.model(batch_x)
                     else:
                         if self.args.output_attention:
                             outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
@@ -141,21 +100,10 @@ class Exp_Main(Exp_Basic):
                 
                 batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
 
-                if self.args.model == 'CARD':
-                        self.ratio = np.array([max(1/np.sqrt(i+1),0.0) for i in range(self.args.pred_len)])
-                        self.ratio = torch.tensor(self.ratio).unsqueeze(-1).to('cuda')
-                        outputs = outputs * self.ratio
-                        batch_y = batch_y * self.ratio
-                # if f_dim!=-1:
-                #         outputs = outputs[:,:,4:]
                 pred = outputs.detach().cpu()
                 true = batch_y.detach().cpu()
 
-                loss = criterion(pred, true)
-                if 'CCM' in self.args.model:
-                    loss += self.args.beta * self.cluster_loss(M, S).detach().cpu()
-                    
-
+                loss = criterion(pred, true)                   
                 total_loss.append(loss)
         total_loss = np.average(total_loss)
         self.model.train()
@@ -183,11 +131,6 @@ class Exp_Main(Exp_Basic):
         if self.args.use_amp:
             scaler = torch.cuda.amp.GradScaler()
         
-        # scheduler = lr_scheduler.OneCycleLR(optimizer = model_optim,
-        #                                     steps_per_epoch = train_steps,
-        #                                     pct_start = self.args.pct_start,
-        #                                     epochs = self.args.train_epochs,
-        #                                     max_lr = self.args.learning_rate)
         scheduler = lr_scheduler.ExponentialLR(model_optim, gamma = 0.9)
         for epoch in range(self.args.train_epochs):
             iter_count = 0
@@ -210,14 +153,8 @@ class Exp_Main(Exp_Basic):
                 # encoder - decoder
                 if self.args.use_amp:
                     with torch.cuda.amp.autocast():
-                        if 'DNN' in self.args.model or 'TST' in self.args.model:
-                            outputs = self.model(batch_x)
-                        elif  'LSTM' in self.args.model:
+                        if  'LSTM' in self.args.model:
                             outputs = self.model(batch_x, batch_x_mark)
-
-                        elif 'CCM' in self.args.model:
-                            outputs, M, S = self.model(batch_x)
-
                         else:
                             if self.args.output_attention:
                                 outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
@@ -230,40 +167,19 @@ class Exp_Main(Exp_Basic):
                         loss = criterion(outputs, batch_y)
                         train_loss.append(loss.item())
                 else:
-                    if 'DNN' in self.args.model or 'TST' in self.args.model:
-                            outputs = self.model(batch_x)
-                    elif  'LSTM' in self.args.model:
+                    if  'LSTM' in self.args.model:
                         outputs = self.model(batch_x, batch_x_mark)
-
-                    elif 'CCM' in self.args.model:
-                        outputs, M, S = self.model(batch_x)
                     else:
                         if self.args.output_attention:
                             outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
-                            
                         else:
                             outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
-                    # print(outputs.shape,batch_y.shape)
                     f_dim = -1 if self.args.features == 'MS' else 0
                     outputs = outputs[:, -self.args.pred_len:, f_dim:]
                     batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
 
-                    if self.args.model == 'CARD':
-                        self.ratio = np.array([max(1/np.sqrt(i+1),0.0) for i in range(self.args.pred_len)])
-                        self.ratio = torch.tensor(self.ratio).unsqueeze(-1).to('cuda')
-                        outputs = outputs * self.ratio
-                        batch_y = batch_y * self.ratio
-
-                    # if f_dim!=-1:
-                    #     outputs = outputs[:,:,:]
                     
-                    
-                    if 'CARD' in self.args.model:
-                        loss = c(outputs, batch_y)  
-                    else:
-                        loss = criterion(outputs, batch_y)
-                    if 'CCM' in self.args.model:
-                        loss += self.args.beta * self.cluster_loss(M, S)
+                    loss = criterion(outputs, batch_y)
                     train_loss.append(loss.item())
 
                 if (i + 1) % 100 == 0:
@@ -282,10 +198,6 @@ class Exp_Main(Exp_Basic):
                     loss.backward()
                     model_optim.step()
                     
-                if self.args.lradj == 'TST':
-                    adjust_learning_rate(model_optim, scheduler, epoch + 1, self.args, printout=False)
-                    scheduler.step()
-
             print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
             train_loss = np.average(train_loss)
             vali_loss = self.vali(vali_data, vali_loader, criterion)
@@ -298,10 +210,7 @@ class Exp_Main(Exp_Basic):
                 print("Early stopping")
                 break
 
-            if self.args.lradj != 'TST':
-                adjust_learning_rate(model_optim, scheduler, epoch + 1, self.args)
-            else:
-                print('Updating learning rate to {}'.format(scheduler.get_last_lr()[0]))
+            print('Updating learning rate to {}'.format(scheduler.get_last_lr()[0]))
         total_end_time = time.time()
         print(f"Total Training Time: {total_end_time - total_start_time:.2f} seconds")
         best_model_path = path + '/' + 'checkpoint.pth'
@@ -341,13 +250,8 @@ class Exp_Main(Exp_Basic):
                 # encoder - decoder
                 if self.args.use_amp:
                     with torch.cuda.amp.autocast():
-                        if 'DNN' in self.args.model or 'TST' in self.args.model:
-                            outputs = self.model(batch_x)
-                        elif  'LSTM' in self.args.model:
+                        if  'LSTM' in self.args.model:
                             outputs = self.model(batch_x, batch_x_mark)
-
-                        elif 'CCM' in self.args.model:
-                            outputs, M, S = self.model(batch_x)
 
                         else:
                             if self.args.output_attention:
@@ -355,13 +259,8 @@ class Exp_Main(Exp_Basic):
                             else:
                                 outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
                 else:
-                    if 'DNN' in self.args.model or 'TST' in self.args.model:
-                            outputs = self.model(batch_x)
-                    elif  'LSTM' in self.args.model:
+                    if  'LSTM' in self.args.model:
                         outputs = self.model(batch_x, batch_x_mark)
-
-                    elif 'CCM' in self.args.model:
-                        outputs, M, S = self.model(batch_x)
 
                     else:
                         if self.args.output_attention:
@@ -377,9 +276,6 @@ class Exp_Main(Exp_Basic):
                 outputs = outputs.detach().cpu().numpy()
                 batch_y = batch_y.detach().cpu().numpy()
 
-                # if f_dim !=-1:
-                #     outputs = outputs[:,:,4:]
-                
                 pred = outputs  # outputs.detach().cpu().numpy()  # .squeeze()
                 true = batch_y  # batch_y.detach().cpu().numpy()  # .squeeze()
 
@@ -414,7 +310,7 @@ class Exp_Main(Exp_Basic):
 
         mae, mse, rmse, mape, mspe, rse, corr = metric(preds, trues)
         print('mse:{}, mae:{}, rmse: {}, rse:{}'.format(mse, mae, rmse, rse))
-        f = open("results_ablation.txt", 'a')
+        f = open("results_" + self.args.data+".txt", 'a')
         f.write(setting + "  \n")
         f.write('mse:{}, mae:{}, rmse: {}, rse:{}'.format(mse, mae, rmse, rse))
         f.write('\n')
@@ -454,33 +350,25 @@ class Exp_Main(Exp_Basic):
                 # encoder - decoder
                 if self.args.use_amp:
                     with torch.cuda.amp.autocast():
-                        if 'DNN' in self.args.model or 'TST' in self.args.model:
-                            outputs = self.model(batch_x)
-                        elif  'LSTM' in self.args.model:
+                        if  'LSTM' in self.args.model:
                             outputs = self.model(batch_x, batch_x_mark)
-
-                        elif 'CCM' in self.args.model:
-                            outputs, M, S = self.model(batch_x)
-
                         else:
                             if self.args.output_attention:
-                                outputs, attn = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
-                            elif 'CCM' in self.args.model:
-                                outputs, M, S = self.model(batch_x)
-
+                                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
                             else:
                                 outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
-                else:
-                    if 'DNN' in self.args.model or 'TST' in self.args.model:
-                        outputs = self.model(batch_x)
-                    elif  'LSTM' in self.args.model:
-                        outputs = self.model(batch_x, batch_x_mark)
-                    elif 'CCM' in self.args.model:
-                        outputs, M, S = self.model(batch_x)
 
+                        f_dim = -1 if self.args.features == 'MS' else 0
+                        outputs = outputs[:, -self.args.pred_len:, f_dim:]
+                        batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
+                        loss = criterion(outputs, batch_y)
+                        train_loss.append(loss.item())
+                else:
+                    if  'LSTM' in self.args.model:
+                        outputs = self.model(batch_x, batch_x_mark)
                     else:
                         if self.args.output_attention:
-                            outputs, attn = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
                         else:
                             outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
                 pred = outputs.detach().cpu().numpy()  # .squeeze()

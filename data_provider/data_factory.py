@@ -1,4 +1,4 @@
-from data_provider.data_loader import TimeSeriesDataset, AnomalyDataset
+from data_provider.data_loader_orig import TimeSeriesDataset
 from torch.utils.data import DataLoader
 import torch
 import pandas as pd
@@ -24,11 +24,16 @@ def data_provider(args, flag):
     data_set = Data(
         path = args.root_path + args.data_path,
         split = flag,
+        train_size = args.train_size,
         seq_len = args.seq_len,
         label_len = args.label_len,
         pred_len = args.pred_len,
         scale = True,
-        inverse = inverse
+        inverse = inverse,
+        random_sample=args.random_sample,
+        data_size = args.data_size,
+        cv_splits = args.cv_splits,
+        cv_index = args.cv_index,
         )
     print(flag, len(data_set))
     data_loader = DataLoader(
@@ -38,19 +43,5 @@ def data_provider(args, flag):
         num_workers=args.num_workers,
         drop_last=drop_last)
     return data_set, data_loader
-
-    
-def get_loader_segment(args, flag):
-    dataset = AnomalyDataset(args.root_path + args.data_path, args.win_size, args.step, flag)
-
-    shuffle = False
-    if flag == 'train':
-        shuffle = True
-
-    data_loader = DataLoader(dataset=dataset,
-                             batch_size=args.batch_size,
-                             shuffle=shuffle,
-                             num_workers=0)
-    return data_loader
 
     

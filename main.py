@@ -22,6 +22,12 @@ if __name__ == '__main__':
     parser.add_argument('--data_path', type=str, default='sbk_ad.csv', help='data file')
     parser.add_argument('--features', type=str, default='MS',
                         help='forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate')
+    parser.add_argument('--train_size', type=float, default=0.6, help='train size portion')
+    parser.add_argument('--random_sample', type=bool, default=False, help='True: random samplingm, False: chronological sampling')
+    parser.add_argument('--data_size', type=float, default=1.0, help='portion of data used for training, 1.0 means using all data')
+    parser.add_argument('--cv_splits', type=int, default=None, help='how many total folds for cross-validation')
+    parser.add_argument('--cv_index', type=int, default=None, help='which fold to use for training, 0-based index')
+
     parser.add_argument('--target', type=str, default='BP', help='target feature in S or MS task')
     parser.add_argument('--freq', type=str, default='d',
                         help='freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')
@@ -92,10 +98,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     # random seed
-    fix_seed = args.random_seed
+    fix_seed = 100
     random.seed(fix_seed)
     torch.manual_seed(fix_seed)
     np.random.seed(fix_seed)
+    print('Random seed: {}'.format(fix_seed))
     
     args.use_gpu = True if torch.cuda.is_available() and args.use_gpu else False
     if args.use_gpu and args.use_multi_gpu:
