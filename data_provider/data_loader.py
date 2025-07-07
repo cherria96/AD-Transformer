@@ -141,7 +141,7 @@ class TimeSeriesDataset(Dataset):
             
 if __name__== "__main__":
     data_set = TimeSeriesDataset(
-        path='data/sbk_ad_selected.csv'
+        path='data/main.csv'
     )
     data_loader = DataLoader(
         data_set,
