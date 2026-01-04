@@ -1,6 +1,8 @@
 # Transformer-based Multi-step Time Series Forecasting of Methane Yield in Full-Scale Anaerobic Digestion
 This is implementation code for methane yield forecasting model in the full-scale anaerobic digestion process
 
+Published in **Water Research**
+https://doi.org/10.1016/j.watres.2025.124276
 
 ## Getting Started
 1. Install requirements. `pip install -r requirements.txt`
